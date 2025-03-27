@@ -32,6 +32,17 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.env.local
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+
+# next.js
+/.next/
+/out/
+/build
 
 # vercel
 .vercel
@@ -39,3 +50,32 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# supabase
+/supabase/.branches
+/supabase/.temp
+/supabase/.env
+
+# IDE specific files
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# User-uploaded content in development
+/public/uploads/
+
+# Cache
+.cache/
+.eslintcache
+
+# Local Netlify folder
+.netlify

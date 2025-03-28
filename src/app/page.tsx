@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { ResponsiveContainer } from '@/components/layout/responsive-container';
@@ -41,51 +40,34 @@ export default function LandingPage() {
               人気のゲーム
             </h2>
             <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {/* ゲームカード */}
+              {/* ゲームカード - 画像エラー対応 */}
               <div className="rounded-lg border bg-white p-4 shadow">
-                <div className="relative h-40 bg-gray-200">
-                  <Image 
-                    src="/images/game-covers/mh4.jpg" 
-                    alt="モンスターハンター4" 
-                    fill 
-                    className="object-cover rounded"
-                  />
+                <div className="relative h-40 bg-gray-200 flex items-center justify-center">
+                  <span className="text-gray-500">モンスターハンター4</span>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">モンスターハンター4</h3>
                 <p className="text-sm text-gray-500">3DS</p>
                 <p className="mt-2 text-sm">現在の募集: 12件</p>
               </div>
               <div className="rounded-lg border bg-white p-4 shadow">
-                <div className="relative h-40 bg-gray-200">
-                  <Image 
-                    src="/images/game-covers/pokemon-hg.jpg" 
-                    alt="ポケットモンスター ハートゴールド" 
-                    fill 
-                    className="object-cover rounded"
-                  />
+                <div className="relative h-40 bg-gray-200 flex items-center justify-center">
+                  <span className="text-gray-500">ポケモン ハートゴールド</span>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">ポケモン ハートゴールド</h3>
                 <p className="text-sm text-gray-500">DS</p>
                 <p className="mt-2 text-sm">現在の募集: 8件</p>
               </div>
               <div className="rounded-lg border bg-white p-4 shadow">
-                <div className="relative h-40 bg-gray-200">
-                  <Image 
-                    src="/images/game-covers/splatoon2.jpg" 
-                    alt="スプラトゥーン2" 
-                    fill 
-                    className="object-cover rounded"
-                  />
+                <div className="relative h-40 bg-gray-200 flex items-center justify-center">
+                  <span className="text-gray-500">スプラトゥーン2</span>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">スプラトゥーン2</h3>
                 <p className="text-sm text-gray-500">Switch</p>
                 <p className="mt-2 text-sm">現在の募集: 15件</p>
               </div>
               <div className="rounded-lg border bg-white p-4 shadow">
-                <div className="relative h-40 bg-gray-200">
-                  <div className="h-full w-full bg-gray-300 flex items-center justify-center text-gray-500">
-                    画像準備中
-                  </div>
+                <div className="relative h-40 bg-gray-200 flex items-center justify-center">
+                  <span className="text-gray-500">マリオカート8 デラックス</span>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">マリオカート8 デラックス</h3>
                 <p className="text-sm text-gray-500">Switch</p>

@@ -1,190 +1,76 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { Search } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { Game } from '@/types/post.types';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 export function GameSelector() {
-  const { register, setValue, watch } = useFormContext();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<Game[]>([]);
-  const [showResults, setShowResults] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const gameId = watch('gameId');
-  const supabase = createClient();
-
-  // 初期選択ゲームの取得
-  useEffect(() => {
-    if (gameId && !selectedGame) {
-      fetchGameById(gameId);
-    }
-  }, [gameId]);
-
-  const fetchGameById = async (id: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('games')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        setSelectedGame(data);
-      }
-    } catch (error) {
-      console.error('ゲーム取得エラー:', error);
-    }
-  };
-
-  // 検索処理
-  useEffect(() => {
-    const fetchGames = async () => {
-      if (searchTerm.trim() === '') {
-        setSearchResults([]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('games')
-          .select('*')
-          .ilike('title', `%${searchTerm}%`)
-          .order('title')
-          .limit(10);
-
-        if (error) throw error;
-        setSearchResults(data || []);
-      } catch (error) {
-        console.error('ゲーム検索エラー:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      fetchGames();
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm, supabase]);
-
-  // ゲーム選択処理
-  const handleSelectGame = (game: Game) => {
-    setSelectedGame(game);
-    setValue('gameId', game.id);
-    setSearchTerm('');
-    setShowResults(false);
-  };
+  const { register, setValue, formState: { errors } } = useFormContext();
+  
+  // ゲームプラットフォームのリスト
+  const platforms = [
+    { id: 'switch', name: 'Nintendo Switch' },
+    { id: '3ds', name: '3DS' },
+    { id: 'ds', name: 'DS' },
+    { id: 'wii', name: 'Wii' },
+    { id: 'wiiu', name: 'Wii U' },
+    { id: 'ps5', name: 'PlayStation 5' },
+    { id: 'ps4', name: 'PlayStation 4' },
+    { id: 'ps3', name: 'PlayStation 3' },
+    { id: 'psp', name: 'PSP' },
+    { id: 'psvita', name: 'PS Vita' },
+    { id: 'xboxs', name: 'Xbox Series X/S' },
+    { id: 'xboxone', name: 'Xbox One' },
+    { id: 'xbox360', name: 'Xbox 360' },
+    { id: 'pc', name: 'PC' },
+    { id: 'mobile', name: 'スマートフォン' },
+    { id: 'other', name: 'その他' }
+  ];
 
   return (
-    <div className="relative">
-      <div className="relative">
-        <input
+    <div className="space-y-4">
+      <div>
+        <label htmlFor="gameTitle" className="block text-sm font-medium text-gray-700">
+          ゲームタイトル
+        </label>
+        <Input
+          id="gameTitle"
           type="text"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setShowResults(true);
-          }}
-          onFocus={() => setShowResults(true)}
-          onBlur={() => {
-            // 少し遅延させて、選択処理が完了した後に結果を非表示にする
-            setTimeout(() => setShowResults(false), 200);
-          }}
-          placeholder="ゲームを検索..."
-          className="input w-full pl-10"
+          placeholder="例: モンスターハンター4、ポケットモンスター ハートゴールドなど"
+          {...register('gameTitle')}
+          error={!!errors.gameTitle}
+          className="mt-1"
         />
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-          <Search size={18} />
-        </div>
+        {errors.gameTitle && (
+          <p className="mt-1 text-xs text-red-500">{errors.gameTitle.message}</p>
+        )}
       </div>
 
-      {/* 隠しフィールド */}
+      <div>
+        <label htmlFor="gamePlatform" className="block text-sm font-medium text-gray-700">
+          プラットフォーム
+        </label>
+        <Select
+          id="gamePlatform"
+          {...register('gamePlatform')}
+          error={!!errors.gamePlatform}
+          className="mt-1"
+        >
+          <option value="">選択してください</option>
+          {platforms.map((platform) => (
+            <option key={platform.id} value={platform.id}>
+              {platform.name}
+            </option>
+          ))}
+        </Select>
+        {errors.gamePlatform && (
+          <p className="mt-1 text-xs text-red-500">{errors.gamePlatform.message}</p>
+        )}
+      </div>
+
+      {/* 入力したゲーム情報をgameIdフィールドに保持するための隠しフィールド (既存のレイアウトに変更を最小限にするため) */}
       <input type="hidden" {...register('gameId')} />
-
-      {/* 選択中のゲーム */}
-      {selectedGame && (
-        <div className="mt-2 flex items-center rounded-md border border-gray-200 bg-gray-50 p-2">
-          <div className="mr-3 h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">
-            {selectedGame.image_url ? (
-              <img 
-                src={selectedGame.image_url} 
-                alt={selectedGame.title} 
-                className="h-full w-full object-cover" 
-              />
-            ) : (
-              <div className="h-full w-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
-                画像なし
-              </div>
-            )}
-          </div>
-          <div>
-            <p className="font-medium">{selectedGame.title}</p>
-            <p className="text-xs text-gray-500">{selectedGame.platform}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedGame(null);
-              setValue('gameId', '');
-              setSearchTerm('');
-            }}
-            className="ml-auto text-sm text-gray-500 hover:text-red-500"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* 検索結果 */}
-      {showResults && searchTerm && (
-        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
-          {isLoading ? (
-            <div className="p-3 text-center text-gray-500">検索中...</div>
-          ) : searchResults.length > 0 ? (
-            <ul className="divide-y divide-gray-200">
-              {searchResults.map((game) => (
-                <li
-                  key={game.id}
-                  onMouseDown={() => handleSelectGame(game)} // onMouseDownを使用して、onBlurより先に実行されるようにする
-                  className="flex cursor-pointer items-center p-3 hover:bg-gray-50"
-                >
-                  <div className="mr-3 h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">
-                    {game.image_url ? (
-                      <img 
-                        src={game.image_url} 
-                        alt={game.title} 
-                        className="h-full w-full object-cover" 
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
-                        画像なし
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium">{game.title}</p>
-                    <p className="text-xs text-gray-500">{game.platform}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="p-3 text-center text-gray-500">
-              検索結果がありません
-              <div className="mt-1 text-xs">
-                見つからない場合は、別の検索キーワードをお試しください
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

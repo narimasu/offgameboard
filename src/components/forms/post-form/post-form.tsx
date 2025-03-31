@@ -16,7 +16,8 @@ import { GameSelector } from './game-selector';
 import { PLAY_TYPES } from '@/types/post.types';
 
 type PostFormData = {
-  gameId: string;
+  gameTitle: string;
+  gamePlatform: string;
   title: string;
   playType: 'battle' | 'coop' | 'trade' | 'other';
   date: string;
@@ -28,6 +29,7 @@ type PostFormData = {
   station?: string;
   participants: string;
   description?: string;
+  gameId?: string; // 互換性のために残しておく
 };
 
 export function PostForm() {
@@ -40,7 +42,8 @@ export function PostForm() {
   const methods = useForm<PostFormData>({
     resolver: zodResolver(postFormSchema),
     defaultValues: {
-      gameId: '',
+      gameTitle: '',
+      gamePlatform: '',
       title: '',
       playType: 'battle',
       date: '',
@@ -52,6 +55,7 @@ export function PostForm() {
       station: '',
       participants: '',
       description: '',
+      gameId: '',
     },
   });
 
@@ -66,10 +70,49 @@ export function PostForm() {
         throw new Error('ログインが必要です');
       }
 
+      // 新しいゲームを作成またはゲームを検索
+      let gameId = '';
+      
+      // ゲームを検索 (タイトルとプラットフォームが一致するもの)
+      const { data: existingGames, error: gameSearchError } = await supabase
+        .from('games')
+        .select('id')
+        .eq('title', data.gameTitle)
+        .eq('platform', data.gamePlatform)
+        .limit(1);
+      
+      if (gameSearchError) {
+        throw gameSearchError;
+      }
+      
+      if (existingGames && existingGames.length > 0) {
+        // 既存のゲームを使用
+        gameId = existingGames[0].id;
+      } else {
+        // 新しいゲームを作成
+        const { data: newGame, error: gameCreateError } = await supabase
+          .from('games')
+          .insert({
+            title: data.gameTitle,
+            platform: data.gamePlatform,
+            category: null,
+            image_url: null,
+            release_year: null
+          })
+          .select('id')
+          .single();
+        
+        if (gameCreateError) {
+          throw gameCreateError;
+        }
+        
+        gameId = newGame.id;
+      }
+
       // 投稿データの作成
       const postData = {
         user_id: user.id,
-        game_id: data.gameId,
+        game_id: gameId,
         title: data.title,
         play_type: data.playType,
         meeting_date: data.date,
@@ -113,13 +156,12 @@ export function PostForm() {
         )}
 
         <div>
-          <label htmlFor="gameId" className="block text-base font-medium text-gray-700">
-            ゲームを選択
+          <label className="block text-base font-medium text-gray-700">
+            ゲーム情報
           </label>
-          <GameSelector />
-          {methods.formState.errors.gameId && (
-            <p className="mt-1 text-xs text-red-500">{methods.formState.errors.gameId.message}</p>
-          )}
+          <div className="mt-2">
+            <GameSelector />
+          </div>
         </div>
 
         <div>

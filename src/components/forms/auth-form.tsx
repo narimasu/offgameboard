@@ -49,6 +49,7 @@ export function AuthForm({ type }: AuthFormProps) {
         router.push('/home');
         router.refresh();
       } else {
+        console.log('サインアップを開始します...');
         const { error: signUpError, data: authData } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
@@ -59,10 +60,16 @@ export function AuthForm({ type }: AuthFormProps) {
           },
         });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          console.error('サインアップエラー:', signUpError);
+          throw signUpError;
+        }
 
-        if (authData.user) {
+        console.log('サインアップ成功、ユーザー情報:', authData?.user?.id || 'ユーザーID不明');
+
+        if (authData?.user) {
           // ユーザープロフィールを作成
+          console.log('ユーザープロフィールを作成します...');
           const { error: profileError } = await supabase
             .from('users')
             .insert({
@@ -72,7 +79,15 @@ export function AuthForm({ type }: AuthFormProps) {
               trust_score: 0,
             });
 
-          if (profileError) throw profileError;
+          if (profileError) {
+            console.error('プロフィール作成エラー:', profileError);
+            throw profileError;
+          }
+          
+          console.log('プロフィール作成成功');
+        } else {
+          console.error('認証は成功しましたが、ユーザー情報がありません');
+          throw new Error('認証は成功しましたが、ユーザー情報がありません');
         }
 
         router.push('/home');
@@ -80,7 +95,18 @@ export function AuthForm({ type }: AuthFormProps) {
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
-      setError(error.message || 'エラーが発生しました。もう一度お試しください。');
+      // エラーメッセージの詳細な表示
+      let errorMessage = '認証エラーが発生しました。もう一度お試しください。';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.error_description) {
+        errorMessage = error.error_description;
+      } else if (typeof error === 'object' && Object.keys(error).length > 0) {
+        errorMessage = `エラー: ${JSON.stringify(error)}`;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

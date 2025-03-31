@@ -51,6 +51,30 @@ export const GET = withRateLimit(async (req: NextRequest) => {
       query = query.or(`title.ilike.%${safeSearch}%,description.ilike.%${safeSearch}%`);
     }
     
+    // ゲーム名での検索
+    const gameSearch = searchParams.get('game');
+    if (gameSearch) {
+      const safeGameSearch = gameSearch.replace(/[%_]/g, '\\$&');
+      
+      // ゲーム名でゲームIDを検索し、そのIDでフィルタリング
+      const { data: matchingGames } = await supabase
+        .from('games')
+        .select('id')
+        .or(`title.ilike.%${safeGameSearch}%,platform.ilike.%${safeGameSearch}%`);
+      
+      if (matchingGames && matchingGames.length > 0) {
+        const gameIds = matchingGames.map(game => game.id);
+        query = query.in('game_id', gameIds);
+      } else {
+        // マッチするゲームがなければ空の結果を返す
+        return NextResponse.json([], {
+          headers: {
+            'Cache-Control': 'public, max-age=10, stale-while-revalidate=59',
+          },
+        });
+      }
+    }
+    
     // クエリ実行
     const { data, error } = await query;
     
@@ -120,8 +144,55 @@ export const POST = withRateLimit(async (req: NextRequest) => {
       );
     }
     
+    // ゲーム情報の処理
+    let gameId = validationResult.data.gameId;
+
+    // gameIdが指定されていない場合は、タイトルとプラットフォームを使用してゲームを検索または作成
+    if (!gameId && validationResult.data.gameTitle && validationResult.data.gamePlatform) {
+      // 既存のゲームを検索
+      const { data: existingGames } = await supabase
+        .from('games')
+        .select('id')
+        .eq('title', validationResult.data.gameTitle)
+        .eq('platform', validationResult.data.gamePlatform)
+        .limit(1);
+      
+      if (existingGames && existingGames.length > 0) {
+        // 既存のゲームを使用
+        gameId = existingGames[0].id;
+      } else {
+        // 新しいゲームを作成
+        const { data: newGame, error: gameCreateError } = await supabase
+          .from('games')
+          .insert({
+            title: validationResult.data.gameTitle,
+            platform: validationResult.data.gamePlatform,
+            category: null,
+            image_url: null,
+            release_year: null
+          })
+          .select('id')
+          .single();
+        
+        if (gameCreateError) {
+          return NextResponse.json(
+            { error: 'Failed to create game', details: gameCreateError },
+            { status: 500 }
+          );
+        }
+        
+        gameId = newGame.id;
+      }
+    }
+    
+    if (!gameId) {
+      return NextResponse.json(
+        { error: 'Game information is required' },
+        { status: 400 }
+      );
+    }
+    
     const {
-      gameId,
       title,
       playType,
       date,

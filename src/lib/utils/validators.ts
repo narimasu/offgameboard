@@ -1,7 +1,8 @@
 import { z } from 'zod'
 
 export const postFormSchema = z.object({
-  gameId: z.string().min(1, 'ゲームを選択してください'),
+  gameTitle: z.string().min(2, 'ゲームタイトルを入力してください').max(100, '100文字以内で入力してください'),
+  gamePlatform: z.string().min(1, 'プラットフォームを選択してください'),
   title: z.string().min(3, '3文字以上入力してください').max(100, '100文字以内で入力してください'),
   playType: z.enum(['battle', 'coop', 'trade', 'other'], {
     required_error: 'プレイ形式を選択してください',
@@ -15,6 +16,7 @@ export const postFormSchema = z.object({
   station: z.string().optional(),
   participants: z.string().min(1, '募集人数を選択してください'),
   description: z.string().max(1000, '1000文字以内で入力してください').optional(),
+  gameId: z.string().optional(), // 互換性のために残しておく
 }).refine(data => {
   // 住所か駅のどちらかが入力されていることを確認
   if (data.locationTab === 'address') {

@@ -21,6 +21,9 @@ export function AuthForm({ type }: AuthFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResendButton, setShowResendButton] = useState(false);
+  const [emailForResend, setEmailForResend] = useState('');
+  const [isResending, setIsResending] = useState(false);
 
   const schema = type === 'login' ? signInSchema : signUpSchema;
   type FormData = z.infer<typeof schema>;
@@ -33,9 +36,32 @@ export function AuthForm({ type }: AuthFormProps) {
     resolver: zodResolver(schema),
   });
 
+  // 確認メール再送信関数
+  const handleResendConfirmation = async () => {
+    if (!emailForResend) return;
+    
+    setIsResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: emailForResend,
+      });
+      
+      if (error) throw error;
+      
+      setError('確認メールを再送信しました。メールをご確認ください。');
+      setShowResendButton(false);
+    } catch (error: any) {
+      setError(`確認メールの再送信に失敗しました: ${error.message}`);
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     setError(null);
+    setShowResendButton(false);
 
     try {
       if (type === 'login') {
@@ -44,10 +70,21 @@ export function AuthForm({ type }: AuthFormProps) {
           password: data.password,
         });
 
-        if (error) throw error;
-        
-        router.push('/home');
-        router.refresh();
+        if (error) {
+          // メール確認エラーを特定して処理
+          if (error.message === 'Email not confirmed') {
+            setError('メールアドレスの確認が完了していません。登録時に送信された確認メールをご確認ください。');
+            
+            // 確認メールの再送信ボタンを表示するためのフラグ
+            setShowResendButton(true);
+            setEmailForResend(data.email);
+          } else {
+            throw error;
+          }
+        } else {
+          router.push('/home');
+          router.refresh();
+        }
       } else {
         console.log('サインアップを開始します...');
         const { error: signUpError, data: authData } = await supabase.auth.signUp({
@@ -65,37 +102,20 @@ export function AuthForm({ type }: AuthFormProps) {
           throw signUpError;
         }
 
-        console.log('サインアップ成功、ユーザー情報:', authData?.user?.id || 'ユーザーID不明');
-
-        if (authData?.user) {
-          // ユーザープロフィールを作成
-          console.log('ユーザープロフィールを作成します...');
-          const { error: profileError } = await supabase
-            .from('users')
-            .insert({
-              id: authData.user.id,
-              username: data.username,
-              email: data.email,
-              trust_score: 0,
-            });
-
-          if (profileError) {
-            console.error('プロフィール作成エラー:', profileError);
-            throw profileError;
-          }
-          
-          console.log('プロフィール作成成功');
+        console.log('サインアップ成功');
+        
+        // 新規登録後の処理
+        if (authData.session) {
+          // セッションがある場合（メール確認が不要の場合）
+          router.push('/home');
+          router.refresh();
         } else {
-          console.error('認証は成功しましたが、ユーザー情報がありません');
-          throw new Error('認証は成功しましたが、ユーザー情報がありません');
+          // メール確認が必要な場合
+          router.push('/verify-email');
         }
-
-        router.push('/home');
-        router.refresh();
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
-      // エラーメッセージの詳細な表示
       let errorMessage = '認証エラーが発生しました。もう一度お試しください。';
       
       if (error.message) {
@@ -116,6 +136,19 @@ export function AuthForm({ type }: AuthFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {error && (
         <div className="p-3 bg-red-50 text-red-500 text-sm rounded-md">{error}</div>
+      )}
+
+      {showResendButton && (
+        <div className="mt-3 text-center">
+          <button
+            type="button"
+            onClick={handleResendConfirmation}
+            className="text-primary-500 hover:text-primary-600 text-sm"
+            disabled={isResending}
+          >
+            {isResending ? '送信中...' : '確認メールを再送信する'}
+          </button>
+        </div>
       )}
 
       {type === 'signup' && (

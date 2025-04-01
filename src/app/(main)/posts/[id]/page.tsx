@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { ResponsiveContainer } from '@/components/layout/responsive-container';
 import { PostDetail } from '@/components/posts/post-detail';
+import { BackButton } from '@/components/ui/back-button'; // 新しいコンポーネントをインポート
 
 interface PostPageProps {
   params: {
@@ -61,9 +62,8 @@ export default async function PostPage({ params }: PostPageProps) {
         <ResponsiveContainer>
           <div className="mx-auto max-w-3xl">
             <div className="mb-6">
-              <a href="#" onClick={() => { history.back(); return false; }} className="text-gray-500 hover:text-gray-700">
-                ← 戻る
-              </a>
+              {/* ここを変更: aタグとonClickをBackButtonコンポーネントに置き換え */}
+              <BackButton />
             </div>
             
             <PostDetail 
@@ -72,8 +72,6 @@ export default async function PostPage({ params }: PostPageProps) {
               isApplied={isApplied}
               userId={currentUserId || undefined}
             />
-            
-            {/* 関連投稿や追加セクションを必要に応じて表示 */}
           </div>
         </ResponsiveContainer>
       </main>

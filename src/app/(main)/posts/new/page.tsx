@@ -7,6 +7,7 @@ import { ResponsiveContainer } from '@/components/layout/responsive-container';
 import { PostForm } from '@/components/forms/post-form/post-form';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
+import { BackButton } from '@/components/ui/back-button'; // 新しいコンポーネントをインポート
 
 export default function NewPostPage() {
   const router = useRouter();
@@ -56,12 +57,8 @@ export default function NewPostPage() {
         <ResponsiveContainer>
           <div className="mx-auto max-w-3xl">
             <div className="mb-8 flex items-center">
-              <button
-                onClick={() => router.back()}
-                className="mr-4 text-gray-500 hover:text-gray-700"
-              >
-                ← 戻る
-              </button>
+              {/* ここを変更: onClick を使った button から BackButton コンポーネントに変更 */}
+              <BackButton className="mr-4" />
               <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">新規投稿作成</h1>
             </div>
             
